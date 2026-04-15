@@ -4,23 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cookbook Import: T&C Solutions</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F5F7FA; color: #1F2933; }
 
-  /* Password gate */
-  .pw-gate { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1F2933; }
-  .pw-box { background: #fff; border-radius: 16px; padding: 40px; max-width: 360px; width: 100%; text-align: center; }
-  .pw-box h2 { font-size: 18px; margin-bottom: 6px; }
-  .pw-box p { font-size: 13px; color: #616E7C; margin-bottom: 20px; }
-  .pw-box input { width: 100%; padding: 12px; border: 1px solid #E4E7EB; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
-  .pw-box button { width: 100%; padding: 12px; background: #91C11E; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .pw-box button:hover { background: #7BA819; }
-  .pw-error { color: #E12D39; font-size: 12px; margin-bottom: 12px; display: none; }
-
   /* App */
-  .app { display: none; }
+  .app { }
   .header { background: #1F2933; padding: 20px 24px; }
   .header h1 { color: #fff; font-size: 18px; font-weight: 700; }
   .header p { color: #9AA5B1; font-size: 13px; margin-top: 4px; }
@@ -111,19 +100,8 @@
 </head>
 <body>
 
-<!-- PASSWORD GATE -->
-<div id="pwGate" class="pw-gate">
-  <div class="pw-box">
-    <h2>Cookbook Import Prototypes</h2>
-    <p>HelloFresh internal - enter password to view</p>
-    <div id="pwError" class="pw-error">Incorrect password</div>
-    <input id="pwInput" type="password" placeholder="Password" autofocus>
-    <button onclick="checkPassword()">View Prototypes</button>
-  </div>
-</div>
-
 <!-- MAIN APP -->
-<div id="app" class="app">
+<div id="app" class="app" style="display:block">
   <div class="header">
     <h1>Cookbook Import: T&C Solutions</h1>
     <p>Users no longer sign in before saving imported recipes - how do we maintain legal coverage?</p>
@@ -351,25 +329,6 @@
 </div>
 
 <script>
-// --- Password ---
-// SHA-256 hash of the password. Change EXPECTED_HASH to set a new password.
-// To generate: open browser console, run: CryptoJS.SHA256("yourpassword").toString()
-const EXPECTED_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"; // "password"
-
-function checkPassword() {
-  const input = document.getElementById("pwInput").value;
-  const hash = CryptoJS.SHA256(input).toString();
-  if (hash === EXPECTED_HASH) {
-    document.getElementById("pwGate").style.display = "none";
-    document.getElementById("app").style.display = "block";
-  } else {
-    document.getElementById("pwError").style.display = "block";
-  }
-}
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Enter" && document.getElementById("pwGate").style.display !== "none") checkPassword();
-});
-
 // --- Tabs ---
 function switchTab(id, btn) {
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
