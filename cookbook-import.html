@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookbook Import: T&C Solutions</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F5F7FA; color: #1F2933; }
+
+  /* Password gate */
+  .pw-gate { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1F2933; }
+  .pw-box { background: #fff; border-radius: 16px; padding: 40px; max-width: 360px; width: 100%; text-align: center; }
+  .pw-box h2 { font-size: 18px; margin-bottom: 6px; }
+  .pw-box p { font-size: 13px; color: #616E7C; margin-bottom: 20px; }
+  .pw-box input { width: 100%; padding: 12px; border: 1px solid #E4E7EB; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
+  .pw-box button { width: 100%; padding: 12px; background: #91C11E; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .pw-box button:hover { background: #7BA819; }
+  .pw-error { color: #E12D39; font-size: 12px; margin-bottom: 12px; display: none; }
+
+  /* App */
+  .app { display: none; }
+  .header { background: #1F2933; padding: 20px 24px; }
+  .header h1 { color: #fff; font-size: 18px; font-weight: 700; }
+  .header p { color: #9AA5B1; font-size: 13px; margin-top: 4px; }
+  .tabs { display: flex; background: #fff; border-bottom: 1px solid #E4E7EB; }
+  .tab { padding: 12px 20px; font-size: 13px; font-weight: 500; color: #616E7C; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: #91C11E; border-bottom-color: #91C11E; }
+  .content { padding: 24px; }
+  .subtitle { font-size: 13px; color: #616E7C; margin-bottom: 16px; }
+
+  /* Phone frames */
+  .phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; justify-items: center; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 280px; height: 520px; border-radius: 24px; border: 4px solid #323F4B; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.15); background: #fff; position: relative; }
+  .phone-label { margin-top: 12px; font-size: 13px; font-weight: 600; text-align: center; max-width: 280px; }
+  .statusbar { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; background: #1F2933; height: 26px; font-size: 11px; color: #fff; }
+  .phone-body { height: calc(100% - 26px); overflow-y: auto; }
+  .navbar { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid #E4E7EB; font-size: 13px; font-weight: 600; }
+  .navbar .back { margin-right: 8px; color: #616E7C; cursor: pointer; border: none; background: none; font-size: 16px; }
+
+  /* Badge */
+  .badge-rolled-back { background: #FEE2E2; color: #B91C1C; text-align: center; padding: 6px 14px; font-size: 11px; font-weight: 600; }
+  .badge-passive { background: #FFF8E1; color: #8B6914; text-align: center; padding: 8px 14px; font-size: 11px; border-bottom: 1px solid #F0E0A0; }
+
+  /* Recipe card */
+  .recipe-card { border: 1px solid #E4E7EB; border-radius: 8px; overflow: hidden; }
+  .recipe-img { height: 100px; background: #F0F4F8; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+  .recipe-info { padding: 10px; }
+  .recipe-info h3 { font-size: 13px; font-weight: 600; }
+  .recipe-info p { font-size: 11px; color: #616E7C; margin-top: 2px; }
+
+  /* Inner elements */
+  .inner-pad { padding: 14px; }
+  .status-line { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #616E7C; margin-top: 6px; }
+  .status-line.green { color: #91C11E; }
+  .btn-green { width: 100%; padding: 12px; background: #91C11E; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .btn-green:hover { background: #7BA819; }
+  .btn-ghost { width: 100%; padding: 8px; background: none; border: none; color: #616E7C; font-size: 13px; cursor: pointer; margin-top: 4px; }
+  .success-box { background: #E6F9E6; color: #1B7A1B; border-radius: 8px; padding: 12px; text-align: center; font-size: 13px; font-weight: 500; margin-top: 16px; }
+  .note { text-align: center; font-size: 11px; color: #616E7C; margin-top: 8px; opacity: .7; }
+
+  /* Modal */
+  .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 10; }
+  .modal-sheet { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 20px; }
+  .modal-handle { width: 40px; height: 4px; background: #E4E7EB; border-radius: 2px; margin: 0 auto 14px; }
+  .modal-sheet h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .modal-sheet p { font-size: 11px; color: #616E7C; line-height: 1.5; margin-bottom: 10px; }
+  .modal-sheet .link { color: #2186EB; text-decoration: underline; }
+
+  /* Option C form */
+  .form-input { width: 100%; padding: 10px; border: 1px solid #E4E7EB; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+  .checkbox-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 11px; color: #616E7C; }
+  .checkbox-row input { margin-top: 2px; }
+  .checkbox-row .link { color: #2186EB; text-decoration: underline; }
+  .preview-box { background: #F5F7FA; border-radius: 8px; padding: 10px; margin-top: 14px; }
+  .preview-box h4 { font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .preview-box p { font-size: 11px; color: #616E7C; }
+
+  /* Option D terms */
+  .terms-box { background: #F5F7FA; border: 1px solid #E4E7EB; border-radius: 8px; padding: 12px; margin-top: 14px; }
+  .terms-box h4 { font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+  .terms-item { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #616E7C; margin-bottom: 4px; }
+  .terms-item .dot { color: #91C11E; }
+  .terms-link { color: #2186EB; text-decoration: underline; font-size: 11px; margin-top: 8px; cursor: pointer; border: none; background: none; }
+  .btn-green-sm { width: 100%; padding: 8px; background: #91C11E; color: #fff; border: none; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  .terms-detail h4 { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .terms-detail p { font-size: 11px; color: #616E7C; line-height: 1.5; }
+  .terms-detail section { margin-bottom: 12px; }
+  .terms-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .terms-header h3 { font-size: 13px; font-weight: 600; }
+  .terms-close { background: none; border: none; font-size: 16px; color: #616E7C; cursor: pointer; }
+
+  /* Comparison */
+  .matrix { border: 1px solid #E4E7EB; border-radius: 12px; overflow: hidden; max-width: 720px; }
+  .matrix-header { background: #1F2933; padding: 12px 16px; }
+  .matrix-header p { color: #fff; font-size: 13px; font-weight: 600; }
+  .matrix table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .matrix th { padding: 8px; font-weight: 600; background: #F5F7FA; }
+  .matrix td { padding: 8px; text-align: center; border-top: 1px solid #E4E7EB; }
+  .matrix td:first-child { text-align: left; font-weight: 500; }
+  .matrix th.old { color: #B91C1C; }
+  .c-green { color: #1B7A1B; }
+  .c-amber { color: #8B6914; }
+  .c-red { color: #B91C1C; }
+  .matrix-footer { background: #E6F9E6; padding: 10px 16px; font-size: 11px; font-weight: 600; color: #1B7A1B; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="pwGate" class="pw-gate">
+  <div class="pw-box">
+    <h2>Cookbook Import Prototypes</h2>
+    <p>HelloFresh internal - enter password to view</p>
+    <div id="pwError" class="pw-error">Incorrect password</div>
+    <input id="pwInput" type="password" placeholder="Password" autofocus>
+    <button onclick="checkPassword()">View Prototypes</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="app">
+  <div class="header">
+    <h1>Cookbook Import: T&C Solutions</h1>
+    <p>Users no longer sign in before saving imported recipes - how do we maintain legal coverage?</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('prototypes', this)">UX Prototypes</button>
+    <button class="tab" onclick="switchTab('comparison', this)">Comparison</button>
+    <button class="tab" onclick="switchTab('assessment', this)">Assessment</button>
+  </div>
+
+  <!-- PROTOTYPES TAB -->
+  <div id="tab-prototypes" class="content">
+    <p class="subtitle">Tap through each prototype to see the user flow.</p>
+    <div class="phones">
+
+      <!-- OPTION A -->
+      <div class="phone-wrap">
+        <div class="phone" id="phoneA">
+          <div class="statusbar"><span>9:41</span><span>&#9679;</span></div>
+          <div class="phone-body">
+            <div class="navbar">Import Recipe</div>
+            <div class="inner-pad">
+              <div class="recipe-card"><div class="recipe-img">&#127837;</div><div class="recipe-info"><h3>Pasta Carbonara</h3><p>Italian Classics Cookbook, p.42</p></div></div>
+              <div class="status-line">&#128247; Scanned from cookbook photo</div>
+              <div class="status-line green">&#10003; Recipe extracted successfully</div>
+              <div id="a-save"><button class="btn-green" onclick="showAModal()">Save to My Cookbook</button></div>
+              <div id="a-success" class="hidden"><div class="success-box">Recipe saved to My Cookbook</div></div>
+            </div>
+            <div id="a-modal" class="modal-overlay hidden">
+              <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <h3>Before you save</h3>
+                <p>By importing this recipe, you confirm you have the right to use this content and agree to our <span class="link">Terms of Service</span> and <span class="link">Privacy Policy</span>.</p>
+                <p>You are responsible for ensuring imported recipes do not infringe third-party copyrights.</p>
+                <button class="btn-green" onclick="confirmA()">I Agree - Save Recipe</button>
+                <button class="btn-ghost" onclick="hideAModal()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-label">Option A: Consent at point of action</p>
+      </div>
+
+      <!-- OPTION B -->
+      <div class="phone-wrap">
+        <div class="phone" id="phoneB">
+          <div class="statusbar"><span>9:41</span><span>&#9679;</span></div>
+          <div class="phone-body">
+            <div class="badge-passive">By using this feature you agree to our <span style="text-decoration:underline">Terms</span> & <span style="text-decoration:underline">Privacy Policy</span></div>
+            <div class="navbar">Import Recipe</div>
+            <div class="inner-pad">
+              <div class="recipe-card"><div class="recipe-img">&#127837;</div><div class="recipe-info"><h3>Pasta Carbonara</h3><p>Italian Classics Cookbook, p.42</p></div></div>
+              <div class="status-line">&#128247; Scanned from cookbook photo</div>
+              <div class="status-line green">&#10003; Recipe extracted successfully</div>
+              <div id="b-save"><button class="btn-green" onclick="confirmB()">Save to My Cookbook</button></div>
+              <div id="b-success" class="hidden"><div class="success-box">Recipe saved to My Cookbook</div></div>
+              <p class="note">Weaker legal coverage - implied consent only</p>
+            </div>
+          </div>
+        </div>
+        <p class="phone-label">Option B: Passive banner consent</p>
+      </div>
+
+      <!-- OPTION C (OLD) -->
+      <div class="phone-wrap">
+        <div class="phone" id="phoneC">
+          <div class="statusbar"><span>9:41</span><span>&#9679;</span></div>
+          <div class="phone-body">
+            <div class="badge-rolled-back">Previous approach - rolled back due to drop-off</div>
+            <div class="navbar"><span id="c-back" class="back hidden" onclick="cGoBack()">&#8592;</span><span id="c-title">Import Recipe</span></div>
+            <div id="c-preview" class="inner-pad">
+              <div class="recipe-card"><div class="recipe-img">&#127837;</div><div class="recipe-info"><h3>Pasta Carbonara</h3><p>Italian Classics Cookbook, p.42</p></div></div>
+              <div class="status-line green">&#10003; Recipe extracted successfully</div>
+              <div class="preview-box"><h4>Ingredients</h4><p>200g spaghetti, 100g guanciale, 2 eggs, 50g pecorino...</p></div>
+              <button class="btn-green" onclick="cShowSignin()">Sign In to Save</button>
+              <p class="note">Create a free account to save recipes</p>
+            </div>
+            <div id="c-signin" class="inner-pad hidden">
+              <p style="font-size:13px;margin-bottom:14px">Sign in or create an account to save imported recipes.</p>
+              <input class="form-input" placeholder="Email address">
+              <input class="form-input" type="password" placeholder="Password">
+              <div class="checkbox-row"><input type="checkbox" checked><span>I agree to the <span class="link">Terms of Service</span> and <span class="link">Privacy Policy</span></span></div>
+              <button class="btn-green" onclick="cConfirm()">Sign In & Save Recipe</button>
+            </div>
+            <div id="c-done" class="inner-pad hidden">
+              <div class="success-box">Recipe saved to My Cookbook</div>
+              <p class="note">Full T&C accepted at account creation</p>
+            </div>
+          </div>
+        </div>
+        <p class="phone-label">OLD FLOW (rolled back): Sign-in required to save</p>
+      </div>
+
+      <!-- OPTION D -->
+      <div class="phone-wrap">
+        <div class="phone" id="phoneD">
+          <div class="statusbar"><span>9:41</span><span>&#9679;</span></div>
+          <div class="phone-body">
+            <div class="navbar">Import Recipe</div>
+            <div class="inner-pad">
+              <div class="recipe-card"><div class="recipe-img">&#127837;</div><div class="recipe-info"><h3>Pasta Carbonara</h3><p>Italian Classics Cookbook, p.42</p></div></div>
+              <div id="d-terms" class="terms-box">
+                <h4>Recipe Import Terms</h4>
+                <div class="terms-item"><span class="dot" id="d-dot-0">&#9675;</span><span>I have the right to use this recipe content</span></div>
+                <div class="terms-item"><span class="dot" id="d-dot-1">&#9675;</span><span>HelloFresh may store and display this recipe</span></div>
+                <div class="terms-item"><span class="dot" id="d-dot-2">&#9675;</span><span>Nutritional info is not verified by HelloFresh</span></div>
+                <button class="terms-link" onclick="dShowFull()">Read full import terms</button>
+                <div id="d-accept-btn"><button class="btn-green-sm" onclick="dAccept()">I Accept These Terms</button></div>
+              </div>
+              <div id="d-save" class="hidden"><button class="btn-green" onclick="dConfirm()">Save to My Cookbook</button></div>
+              <div id="d-success" class="hidden"><div class="success-box">Recipe saved to My Cookbook</div></div>
+            </div>
+            <div id="d-modal" class="modal-overlay hidden">
+              <div class="modal-sheet terms-detail">
+                <div class="terms-header"><h3>Recipe Import Terms</h3><button class="terms-close" onclick="dHideFull()">&#10005;</button></div>
+                <section><h4>1. Content Rights</h4><p>You represent that you have the right to import and store this recipe content for personal use.</p></section>
+                <section><h4>2. License Grant</h4><p>You grant HelloFresh a limited license to store, process, and display imported recipes within your account.</p></section>
+                <section><h4>3. Disclaimer</h4><p>Nutritional information, allergen data, and cooking instructions from imported recipes are not verified by HelloFresh.</p></section>
+                <section><h4>4. Copyright</h4><p>HelloFresh is not liable for copyright infringement resulting from user-imported content.</p></section>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-label">Option D: Lightweight import-specific terms</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COMPARISON TAB -->
+  <div id="tab-comparison" class="content hidden">
+    <div class="matrix">
+      <div class="matrix-header"><p>Option Comparison</p></div>
+      <table>
+        <thead><tr><th style="text-align:left">Criteria</th><th>A</th><th>B</th><th class="old">C (OLD)</th><th>D</th></tr></thead>
+        <tbody>
+          <tr><td>Legal coverage</td><td class="c-green">Strong</td><td class="c-red">Weak</td><td class="c-green">Strongest</td><td class="c-green">Strong</td></tr>
+          <tr><td>UX friction</td><td class="c-green">Low (1 tap)</td><td class="c-green">None</td><td class="c-red">High (sign-in)</td><td class="c-amber">Medium (2 taps)</td></tr>
+          <tr><td>GDPR compliance</td><td class="c-green">Yes</td><td class="c-red">Risky</td><td class="c-green">Yes</td><td class="c-green">Yes</td></tr>
+          <tr><td>Works without account</td><td class="c-green">Yes</td><td class="c-green">Yes</td><td class="c-red">No</td><td class="c-green">Yes</td></tr>
+          <tr><td>IP / copyright cover</td><td class="c-green">Yes</td><td class="c-amber">Implied only</td><td class="c-green">Yes (full T&C)</td><td class="c-green">Yes (scoped)</td></tr>
+          <tr><td>User drop-off risk</td><td class="c-green">Low</td><td class="c-green">None</td><td class="c-red">High (rolled back)</td><td class="c-green">Low-Medium</td></tr>
+          <tr><td>Implementation effort</td><td class="c-green">Low</td><td class="c-green">Very low</td><td class="c-amber">N/A (was BAU)</td><td class="c-amber">Medium</td></tr>
+        </tbody>
+      </table>
+      <div class="matrix-footer">Recommendation: Option A (consent modal) - best balance of legal coverage and UX. Option C was BAU and is not viable (rolled back).</div>
+    </div>
+  </div>
+
+  <!-- ASSESSMENT TAB -->
+  <div id="tab-assessment" class="content hidden">
+    <p class="subtitle">Weighted scoring to identify the optimal solution.</p>
+    <div class="matrix" style="max-width: 900px;">
+      <div class="matrix-header"><p>Weighted Assessment Matrix</p></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Criteria</th>
+            <th style="text-align:center">Weight</th>
+            <th>A</th>
+            <th>B</th>
+            <th class="old">C (OLD)</th>
+            <th>D</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Legal coverage</td><td style="text-align:center">25%</td><td class="c-green">4 (1.00)</td><td class="c-red">1 (0.25)</td><td class="c-green">5 (1.25)</td><td class="c-green">4 (1.00)</td></tr>
+          <tr><td>UX friction / conversion</td><td style="text-align:center">30%</td><td class="c-green">4 (1.20)</td><td class="c-green">5 (1.50)</td><td class="c-red">1 (0.30)</td><td class="c-amber">3 (0.90)</td></tr>
+          <tr><td>GDPR / privacy compliance</td><td style="text-align:center">15%</td><td class="c-green">5 (0.75)</td><td class="c-red">2 (0.30)</td><td class="c-green">5 (0.75)</td><td class="c-green">5 (0.75)</td></tr>
+          <tr><td>Works without account</td><td style="text-align:center">10%</td><td class="c-green">5 (0.50)</td><td class="c-green">5 (0.50)</td><td class="c-red">1 (0.10)</td><td class="c-green">5 (0.50)</td></tr>
+          <tr><td>IP / copyright protection</td><td style="text-align:center">10%</td><td class="c-green">5 (0.50)</td><td class="c-amber">2 (0.20)</td><td class="c-green">5 (0.50)</td><td class="c-green">4 (0.40)</td></tr>
+          <tr><td>Implementation effort</td><td style="text-align:center">10%</td><td class="c-green">4 (0.40)</td><td class="c-green">5 (0.50)</td><td class="c-amber">3 (0.30)</td><td class="c-amber">3 (0.30)</td></tr>
+          <tr style="background:#F5F7FA;font-weight:700"><td>TOTAL SCORE</td><td style="text-align:center">100%</td><td class="c-green">4.35</td><td class="c-amber">3.25</td><td class="c-red">3.20</td><td class="c-green">3.85</td></tr>
+        </tbody>
+      </table>
+      <div class="matrix-footer" style="background:#E6F9E6">
+        <strong>Winner: Option A (4.35)</strong> — Best overall score balancing legal protection with user experience.
+      </div>
+    </div>
+
+    <div class="matrix" style="max-width: 900px; margin-top: 24px;">
+      <div class="matrix-header"><p>Risk Assessment</p></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Risk Factor</th>
+            <th>A</th>
+            <th>B</th>
+            <th class="old">C (OLD)</th>
+            <th>D</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Legal liability exposure</td><td class="c-green">Low</td><td class="c-red">High</td><td class="c-green">Low</td><td class="c-green">Low</td></tr>
+          <tr><td>User drop-off impact</td><td class="c-green">Minimal</td><td class="c-green">None</td><td class="c-red">Severe (-40%)</td><td class="c-amber">Moderate</td></tr>
+          <tr><td>Regulatory scrutiny risk</td><td class="c-green">Low</td><td class="c-red">Medium-High</td><td class="c-green">Low</td><td class="c-green">Low</td></tr>
+          <tr><td>Copyright claim exposure</td><td class="c-green">Protected</td><td class="c-red">Unprotected</td><td class="c-green">Protected</td><td class="c-green">Protected</td></tr>
+        </tbody>
+      </table>
+      <div class="matrix-footer" style="background:#FEE2E2;color:#B91C1C">
+        <strong>Highest Risk: Option B</strong> — Implied consent insufficient for legal protection. Option C rolled back due to conversion impact.
+      </div>
+    </div>
+
+    <div class="matrix" style="max-width: 900px; margin-top: 24px;">
+      <div class="matrix-header"><p>Stakeholder Impact</p></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Stakeholder</th>
+            <th>Option A Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Users</td><td class="c-green">Single tap consent, clear expectations, frictionless save</td></tr>
+          <tr><td>Legal</td><td class="c-green">Explicit consent captured, copyright liability transferred to user</td></tr>
+          <tr><td>Product</td><td class="c-green">Maintains conversion rate, no sign-in barrier</td></tr>
+          <tr><td>Engineering</td><td class="c-green">Low effort — modal + consent flag storage</td></tr>
+          <tr><td>Compliance</td><td class="c-green">GDPR-compliant, auditable consent record</td></tr>
+        </tbody>
+      </table>
+      <div class="matrix-footer">All stakeholder needs addressed with Option A implementation.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Password ---
+// SHA-256 hash of the password. Change EXPECTED_HASH to set a new password.
+// To generate: open browser console, run: CryptoJS.SHA256("yourpassword").toString()
+const EXPECTED_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"; // "password"
+
+function checkPassword() {
+  const input = document.getElementById("pwInput").value;
+  const hash = CryptoJS.SHA256(input).toString();
+  if (hash === EXPECTED_HASH) {
+    document.getElementById("pwGate").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  } else {
+    document.getElementById("pwError").style.display = "block";
+  }
+}
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && document.getElementById("pwGate").style.display !== "none") checkPassword();
+});
+
+// --- Tabs ---
+function switchTab(id, btn) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll("[id^='tab-']").forEach(t => t.classList.add("hidden"));
+  document.getElementById("tab-" + id).classList.remove("hidden");
+}
+
+// --- Option A ---
+function showAModal() { document.getElementById("a-modal").classList.remove("hidden"); }
+function hideAModal() { document.getElementById("a-modal").classList.add("hidden"); }
+function confirmA() { hideAModal(); document.getElementById("a-save").classList.add("hidden"); document.getElementById("a-success").classList.remove("hidden"); }
+
+// --- Option B ---
+function confirmB() { document.getElementById("b-save").classList.add("hidden"); document.getElementById("b-success").classList.remove("hidden"); }
+
+// --- Option C ---
+function cShowSignin() { document.getElementById("c-preview").classList.add("hidden"); document.getElementById("c-signin").classList.remove("hidden"); document.getElementById("c-back").classList.remove("hidden"); document.getElementById("c-title").textContent = "Sign In to Save"; }
+function cGoBack() { document.getElementById("c-signin").classList.add("hidden"); document.getElementById("c-preview").classList.remove("hidden"); document.getElementById("c-back").classList.add("hidden"); document.getElementById("c-title").textContent = "Import Recipe"; }
+function cConfirm() { document.getElementById("c-signin").classList.add("hidden"); document.getElementById("c-done").classList.remove("hidden"); document.getElementById("c-back").classList.add("hidden"); document.getElementById("c-title").textContent = "Import Recipe"; }
+
+// --- Option D ---
+function dAccept() {
+  document.getElementById("d-accept-btn").classList.add("hidden");
+  document.getElementById("d-save").classList.remove("hidden");
+  ["d-dot-0","d-dot-1","d-dot-2"].forEach(id => { document.getElementById(id).innerHTML = "&#10003;"; });
+}
+function dConfirm() { document.getElementById("d-terms").classList.add("hidden"); document.getElementById("d-save").classList.add("hidden"); document.getElementById("d-success").classList.remove("hidden"); }
+function dShowFull() { document.getElementById("d-modal").classList.remove("hidden"); }
+function dHideFull() { document.getElementById("d-modal").classList.add("hidden"); }
+</script>
+</body>
+</html>
